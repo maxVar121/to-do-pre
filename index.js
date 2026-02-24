@@ -10,26 +10,86 @@ let items = [
 const listElement = document.querySelector(".to-do__list");
 const formElement = document.querySelector(".to-do__form");
 const inputElement = document.querySelector(".to-do__input");
+const templateElement = document.getElementById("to-do__item-template");
 
 function loadTasks() {
-
+	const savedTasks = localStorage.getItem('tasks');
+	if (savedTasks) {
+		return JSON.parse(savedTasks);
+	}
+	return items;
 }
 
-function createItem(item) {
-	const template = document.getElementById("to-do__item-template");
-	const clone = template.content.querySelector(".to-do__item").cloneNode(true);
-  const textElement = clone.querySelector(".to-do__item-text");
-  const deleteButton = clone.querySelector(".to-do__item-button_type_delete");
-  const duplicateButton = clone.querySelector(".to-do__item-button_type_duplicate");
-  const editButton = clone.querySelector(".to-do__item-button_type_edit");
-
+function createItem(taskText) {
+	const clone = templateElement.content.querySelector(".to-do__item").cloneNode(true);
+	const textElement = clone.querySelector(".to-do__item-text");
+	const deleteButton = clone.querySelector(".to-do__item-button_type_delete");
+	const duplicateButton = clone.querySelector(".to-do__item-button_type_duplicate");
+	const editButton = clone.querySelector(".to-do__item-button_type_edit");
+	
+	textElement.textContent = taskText;
+	
+	deleteButton.addEventListener('click', () => {
+		clone.remove();
+		const tasks = getTasksFromDOM();
+		saveTasks(tasks);
+	});
+	
+	duplicateButton.addEventListener('click', () => {
+		const itemName = textElement.textContent;
+		const newItem = createItem(itemName);
+		listElement.prepend(newItem);
+		const tasks = getTasksFromDOM();
+		saveTasks(tasks);
+	});
+	
+	editButton.addEventListener('click', () => {
+		textElement.setAttribute('contenteditable', 'true');
+		textElement.focus();
+	});
+	
+	textElement.addEventListener('blur', () => {
+		textElement.setAttribute('contenteditable', 'false');
+		const tasks = getTasksFromDOM();
+		saveTasks(tasks);
+	});
+	
+	return clone;
 }
 
 function getTasksFromDOM() {
-
+	const itemsNamesElements = listElement.querySelectorAll(".to-do__item-text");
+	const tasks = [];
+	
+	itemsNamesElements.forEach((element) => {
+		tasks.push(element.textContent);
+	});
+	
+	return tasks;
 }
 
 function saveTasks(tasks) {
-
+	localStorage.setItem('tasks', JSON.stringify(tasks));
 }
 
+const initialTasks = loadTasks();
+
+initialTasks.forEach((task) => {
+	const taskElement = createItem(task);
+	listElement.append(taskElement);
+});
+
+formElement.addEventListener('submit', (evt) => {
+	evt.preventDefault();
+	
+	const taskText = inputElement.value.trim();
+	
+	if (taskText) {
+		const taskElement = createItem(taskText);
+		listElement.prepend(taskElement);
+		inputElement.value = '';
+		
+		const tasks = getTasksFromDOM();
+		saveTasks(tasks);
+	}
+});
